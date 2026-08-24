@@ -26,7 +26,7 @@ export default function Login() {
     <View className="flex-1 justify-center px-6 bg-white">
       <Text className="text-3xl font-bold mb-8">Login</Text>
 
-      {/* Email */}
+      
       <TextInput
         className="border border-gray-300 rounded-lg px-4 py-3 mb-4"
         placeholder="Email"
@@ -36,7 +36,7 @@ export default function Login() {
         keyboardType="email-address"
       />
 
-      {/* Password */}
+      
       <TextInput
         className="border border-gray-300 rounded-lg px-4 py-3 mb-6"
         placeholder="Password"
@@ -45,7 +45,7 @@ export default function Login() {
         secureTextEntry
       />
 
-      {/* Login Button */}
+      
       <TouchableOpacity
         className="bg-blue-500 rounded-lg py-4 items-center"
         onPress={handleLogin}
