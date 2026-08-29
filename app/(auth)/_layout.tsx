@@ -1,4 +1,4 @@
-//security gate  and it is parenet and all other files are child 
+//security gate  and it is parent and all other files are child 
 
 import { Stack } from "expo-router";
 
