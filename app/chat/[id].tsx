@@ -2,16 +2,17 @@ import { useEffect, useState, useRef } from 'react';
 import {
   View,
   Text,
-  FlatList,
   TextInput,
   TouchableOpacity,
-  Platform,
   ActivityIndicator,
 } from 'react-native';
 import { useLocalSearchParams, router } from 'expo-router';
 import { supabase } from '@/utils/supabase';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
-import { KeyboardAvoidingView } from 'react-native-keyboard-controller';
+import {
+  KeyboardAwareScrollView,
+} from 'react-native-keyboard-controller';
+import ChatInputBar from '@/components/ChatInputBar';
 
 type Message = {
   id: string;
@@ -29,7 +30,7 @@ export default function ChatScreen() {
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const flatListRef = useRef<FlatList>(null);
+  const scrollViewRef = useRef<any>(null);
 
   useEffect(() => {
     if (!id) return;
@@ -90,8 +91,9 @@ export default function ChatScreen() {
                 if (exists) return prev;
                 return [...prev, newMsg];
               });
+              // Scroll to bottom when new message arrives
               setTimeout(() => {
-                flatListRef.current?.scrollToEnd({ animated: true });
+                scrollViewRef.current?.scrollToEnd({ animated: true });
               }, 100);
             }
           )
@@ -181,11 +183,7 @@ export default function ChatScreen() {
   }
 
   return (
-    <KeyboardAvoidingView
-      style={{ flex: 1, backgroundColor: 'white' }}
-      behavior="padding"
-      keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
-    >
+    <View style={{ flex: 1, backgroundColor: '#ffffff' }}>
       {/* Header */}
       <View className="px-4 py-4 border-b border-gray-200 flex-row items-center">
         <TouchableOpacity onPress={() => router.back()} className="mr-3">
@@ -199,70 +197,55 @@ export default function ChatScreen() {
         <Text className="text-xl font-bold">{otherUsername || 'Chat'}</Text>
       </View>
 
-      {/* Messages list */}
-      <FlatList
-        ref={flatListRef}
-        data={messages}
-        keyExtractor={(item) => item.id}
+      {/* Messages list — KeyboardAwareScrollView keeps content above keyboard */}
+      <KeyboardAwareScrollView
+        ref={scrollViewRef}
         contentContainerStyle={{ padding: 16, paddingBottom: 8 }}
         onContentSizeChange={() =>
-          flatListRef.current?.scrollToEnd({ animated: false })
+          scrollViewRef.current?.scrollToEnd({ animated: false })
         }
-        renderItem={({ item }) => {
-          const isMe = item.sender_id === currentUserId;
-          return (
-            <View className={`mb-3 ${isMe ? 'items-end' : 'items-start'}`}>
-              <View
-                className={`px-4 py-2 rounded-2xl max-w-xs ${
-                  isMe ? 'bg-blue-500' : 'bg-gray-200'
-                }`}
-              >
-                <Text className={isMe ? 'text-white' : 'text-black'}>
-                  {item.content}
-                </Text>
-              </View>
-              <Text className="text-gray-400 text-xs mt-1">
-                {new Date(item.created_at).toLocaleTimeString([], {
-                  hour: '2-digit',
-                  minute: '2-digit',
-                })}
-              </Text>
-            </View>
-          );
-        }}
-        ListEmptyComponent={
+        keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
+        bottomOffset={16}
+      >
+        {messages.length === 0 ? (
           <View className="justify-center items-center mt-20">
             <Text className="text-gray-400 text-base">No messages yet</Text>
             <Text className="text-gray-400 text-sm mt-1">Say hi! 👋</Text>
           </View>
-        }
+        ) : (
+          messages.map((item) => {
+            const isMe = item.sender_id === currentUserId;
+            return (
+              <View key={item.id} className={`mb-3 ${isMe ? 'items-end' : 'items-start'}`}>
+                <View
+                  className={`px-4 py-2 rounded-2xl max-w-xs ${
+                    isMe ? 'bg-blue-500' : 'bg-gray-200'
+                  }`}
+                >
+                  <Text className={isMe ? 'text-white' : 'text-black'}>
+                    {item.content}
+                  </Text>
+                </View>
+                <Text className="text-gray-400 text-xs mt-1">
+                  {new Date(item.created_at).toLocaleTimeString([], {
+                    hour: '2-digit',
+                    minute: '2-digit',
+                  })}
+                </Text>
+              </View>
+            );
+          })
+        )}
+      </KeyboardAwareScrollView>
+
+      {/* Sticky input bar — sits above the keyboard automatically */}
+      <ChatInputBar
+        value={newMessage}
+        onChangeText={setNewMessage}
+        onSend={sendMessage}
+        sending={sending}
       />
-
-      {/* Input bar */}
-      <View className="px-4 py-3 border-t border-gray-200 flex-row items-center">
-        <TextInput
-          className="flex-1 bg-gray-100 rounded-full px-4 py-3 mr-3"
-          placeholder="Type a message..."
-          value={newMessage}
-          onChangeText={setNewMessage}
-          multiline
-          maxLength={1000}
-        />
-        <TouchableOpacity
-          className={`w-12 h-12 rounded-full justify-center items-center ${
-            newMessage.trim() && !sending ? 'bg-blue-500' : 'bg-gray-300'
-          }`}
-          onPress={sendMessage}
-          disabled={!newMessage.trim() || sending}
-        >
-          {sending ? (
-            <ActivityIndicator size="small" color="white" />
-          ) : (
-            <FontAwesome name="send" size={18} color="white" />
-          )}
-        </TouchableOpacity>
-      </View>
-
-    </KeyboardAvoidingView>
+    </View>
   );
 }
