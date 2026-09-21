@@ -1,7 +1,15 @@
-// have to recreate
 
 import { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, Alert } from 'react-native';
+import {
+  View,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  Alert,
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
+} from 'react-native';
 import { Link } from 'expo-router';
 import { supabase } from '@/utils/supabase';
 
@@ -11,73 +19,148 @@ export default function Register() {
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
 
- async function handleRegister() {
-  setLoading(true);
+  async function handleRegister() {
+    if (!username || !email || !password) {
+      Alert.alert(
+        'Missing information',
+        'Please fill in all the fields.'
+      );
+      return;
+    }
 
-  console.log('Registering with:', { username, email, password }); // check values
+    setLoading(true);
 
-  const { data, error } = await supabase.auth.signUp({
-    email,
-    password,
-    options: {
-      data: { username },
-    },
-  });
+    console.log('Registering with:', {
+      username,
+      email,
+      password,
+    });
 
- // console.log('data:', data);   // check response
- // console.log('error:', error); // check exact error
+    const { data, error } = await supabase.auth.signUp({
+      email,
+      password,
+      options: {
+        data: {
+          username,
+        },
+      },
+    });
 
-  if (error) Alert.alert('Error', error.message);
-  setLoading(false);
-}
+    if (error) {
+      Alert.alert('Registration failed', error.message);
+    }
+
+    setLoading(false);
+  }
 
   return (
-    <View className="flex-1 justify-center px-6 bg-white">
-      <Text className="text-3xl font-bold mb-8">Register</Text>
-
-      {/* Username */}
-      <TextInput
-        className="border border-gray-300 rounded-lg px-4 py-3 mb-4"
-        placeholder="Username"
-        value={username}
-        onChangeText={setUsername}
-        autoCapitalize="none"
-      />
-
-      {/* Email */}
-      <TextInput
-        className="border border-gray-300 rounded-lg px-4 py-3 mb-4"
-        placeholder="Email"
-        value={email}
-        onChangeText={setEmail}
-        autoCapitalize="none"
-        keyboardType="email-address"
-      />
-
-      {/* Password */}
-      <TextInput
-        className="border border-gray-300 rounded-lg px-4 py-3 mb-6"
-        placeholder="Password"
-        value={password}
-        onChangeText={setPassword}
-        secureTextEntry
-      />
-
-      {/* Register Button */}
-      <TouchableOpacity
-        className="bg-blue-500 rounded-lg py-4 items-center"
-        onPress={handleRegister}
-        disabled={loading}
+    <KeyboardAvoidingView
+      className="flex-1 bg-white"
+      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+    >
+      <ScrollView
+        contentContainerClassName="flex-grow justify-center px-6 py-10"
+        keyboardShouldPersistTaps="handled"
       >
-        <Text className="text-white font-semibold text-base">
-          {loading ? 'Creating account...' : 'Register'}
-        </Text>
-      </TouchableOpacity>
+        <View className="w-full max-w-md self-center">
 
-      {/* Go to Login */}
-      <Link href="/(auth)/login" className="text-center mt-4 text-blue-500">
-        Already have an account? Login
-      </Link>
-    </View>
+          {/* Header */}
+          <View className="mb-10">
+            <Text className="text-4xl font-bold tracking-tight text-gray-900">
+              Create an account
+            </Text>
+
+            <Text className="mt-2 text-base leading-6 text-gray-500">
+              Sign up to get started with your account.
+            </Text>
+          </View>
+
+          {/* Form */}
+          <View className="gap-5">
+
+            {/* Username */}
+            <View>
+              <Text className="mb-2 text-sm font-medium text-gray-700">
+                Username
+              </Text>
+
+              <TextInput
+                className="h-14 rounded-xl border border-gray-200 bg-gray-50 px-4 text-base text-gray-900"
+                placeholder="Choose a username"
+                placeholderTextColor="#9CA3AF"
+                value={username}
+                onChangeText={setUsername}
+                autoCapitalize="none"
+                autoCorrect={false}
+              />
+            </View>
+
+            {/* Email */}
+            <View>
+              <Text className="mb-2 text-sm font-medium text-gray-700">
+                Email
+              </Text>
+
+              <TextInput
+                className="h-14 rounded-xl border border-gray-200 bg-gray-50 px-4 text-base text-gray-900"
+                placeholder="you@example.com"
+                placeholderTextColor="#9CA3AF"
+                value={email}
+                onChangeText={setEmail}
+                autoCapitalize="none"
+                autoCorrect={false}
+                keyboardType="email-address"
+              />
+            </View>
+
+            {/* Password */}
+            <View>
+              <Text className="mb-2 text-sm font-medium text-gray-700">
+                Password
+              </Text>
+
+              <TextInput
+                className="h-14 rounded-xl border border-gray-200 bg-gray-50 px-4 text-base text-gray-900"
+                placeholder="Create a password"
+                placeholderTextColor="#9CA3AF"
+                value={password}
+                onChangeText={setPassword}
+                secureTextEntry
+              />
+            </View>
+
+            {/* Register Button */}
+            <TouchableOpacity
+              className={`mt-2 h-14 items-center justify-center rounded-xl ${
+                loading ? 'bg-blue-300' : 'bg-blue-600'
+              }`}
+              onPress={handleRegister}
+              disabled={loading}
+              activeOpacity={0.8}
+            >
+              <Text className="text-base font-semibold text-white">
+                {loading ? 'Creating account...' : 'Create account'}
+              </Text>
+            </TouchableOpacity>
+          </View>
+
+          {/* Login */}
+          <View className="mt-8 flex-row justify-center">
+            <Text className="text-sm text-gray-500">
+              Already have an account?{' '}
+            </Text>
+
+            <Link
+              href="/(auth)/login"
+              className="text-sm font-semibold text-blue-600"
+            >
+              Login
+            </Link>
+          </View>
+
+        </View>
+      </ScrollView>
+    </KeyboardAvoidingView>
   );
 }
+
