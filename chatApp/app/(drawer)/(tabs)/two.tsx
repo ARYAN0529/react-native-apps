@@ -1,3 +1,5 @@
+//setting's page 
+
 import { useEffect, useRef } from 'react';
 import {
   View,
