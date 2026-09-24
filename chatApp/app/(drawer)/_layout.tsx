@@ -1,29 +1,24 @@
-import { Ionicons, MaterialIcons } from '@expo/vector-icons';
 import { Drawer } from 'expo-router/drawer';
-
 
 const DrawerLayout = () => {
   return (
-    <Drawer>
+    <Drawer
+      screenOptions={{
+        headerShown: false,        // hide drawer's own header — tabs handle their own
+        drawerType: 'slide',
+        swipeEnabled: false,       // disable swipe-to-open so it doesn't conflict with chat gestures
+        drawerStyle: {
+          width: 0,                // effectively hides the drawer — you're using tabs for nav
+        },
+      }}
+    >
       <Drawer.Screen
         name="index"
-        options={{
-          headerTitle: 'Home',
-          drawerLabel: 'Home',
-          drawerIcon: ({ size, color }) => (
-            <Ionicons name="home-outline" size={size} color={color} />
-          ),
-        }}
+        options={{ headerShown: false }}
       />
       <Drawer.Screen
         name="(tabs)"
-        options={{
-          headerShown: false,
-          drawerLabel: 'Tabs',
-          drawerIcon: ({ size, color }) => (
-            <MaterialIcons name="border-bottom" size={size} color={color} />
-          ),
-        }}
+        options={{ headerShown: false }}
       />
     </Drawer>
   );

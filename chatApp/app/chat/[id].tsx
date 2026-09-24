@@ -18,6 +18,19 @@ type Message = {
   created_at: string;
 };
 
+// same color logic as chat list — consistent avatar color per username
+const AVATAR_COLORS = ['#2AABEE', '#E91E63', '#9C27B0', '#FF9800', '#4CAF50', '#F44336', '#00BCD4'];
+function getAvatarColor(name: string) {
+  let hash = 0;
+  for (let i = 0; i < name.length; i++) hash = name.charCodeAt(i) + ((hash << 5) - hash);
+  return AVATAR_COLORS[Math.abs(hash) % AVATAR_COLORS.length];
+}
+
+// formats message timestamp — just HH:MM inside chat
+function formatMessageTime(isoString: string) {
+  return new Date(isoString).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+}
+
 export default function ChatScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const [messages, setMessages] = useState<Message[]>([]);
@@ -36,64 +49,41 @@ export default function ChatScreen() {
 
     async function setup() {
       try {
-        // 1. Get current logged in user
-        const {
-          data: { user },
-          error: userError,
-        } = await supabase.auth.getUser();
+        // get current logged-in user
+        const { data: { user }, error: userError } = await supabase.auth.getUser();
         if (userError || !user) {
           router.replace('/(auth)/login');
           return;
         }
         setCurrentUserId(user.id);
 
-        // 2. Get the OTHER user in this conversation via RPC
-        //    (bypasses RLS so we can read the other member's profile)
+        // get the other person's username via RPC
         const { data: partner, error: partnerError } = await supabase.rpc(
           'get_conversation_partner',
           { conv_id: id }
         );
+        if (partnerError) console.log('partner error:', partnerError);
+        else if (partner && partner.length > 0) setOtherUsername(partner[0].username);
 
-        console.log('partner:', partner);
-        console.log('partner error:', partnerError);
-
-        if (partnerError) {
-          console.log('partner error:', partnerError);
-        } else if (partner && partner.length > 0) {
-          setOtherUsername(partner[0].username);
-        }
-
-        // 3. Fetch existing messages
+        // load existing messages
         await fetchMessages();
 
-        // 4. Subscribe to realtime new messages via Supabase WebSocket
+        // realtime listener for new messages in this chat
         channel = supabase
           .channel(`chat:${id}`)
           .on(
             'postgres_changes',
-            {
-              event: 'INSERT',
-              schema: 'public',
-              table: 'messages',
-              filter: `conversation_id=eq.${id}`,
-            },
+            { event: 'INSERT', schema: 'public', table: 'messages', filter: `conversation_id=eq.${id}` },
             (payload) => {
               const newMsg = payload.new as Message;
-              // Avoid duplicate messages
               setMessages((prev) => {
-                const exists = prev.find((m) => m.id === newMsg.id);
-                if (exists) return prev;
+                if (prev.find((m) => m.id === newMsg.id)) return prev; // skip duplicate
                 return [...prev, newMsg];
               });
-              // Scroll to bottom when new message arrives
-              setTimeout(() => {
-                scrollViewRef.current?.scrollToEnd({ animated: true });
-              }, 100);
+              setTimeout(() => scrollViewRef.current?.scrollToEnd({ animated: true }), 100);
             }
           )
-          .subscribe((status) => {
-            console.log('Realtime status:', status);
-          });
+          .subscribe();
       } catch (err) {
         console.log('setup error:', err);
         setError('Failed to load chat');
@@ -102,11 +92,7 @@ export default function ChatScreen() {
     }
 
     setup();
-
-    // Cleanup WebSocket on unmount
-    return () => {
-      if (channel) supabase.removeChannel(channel);
-    };
+    return () => { if (channel) supabase.removeChannel(channel); };
   }, [id]);
 
   async function fetchMessages() {
@@ -115,9 +101,6 @@ export default function ChatScreen() {
       .select('*')
       .eq('conversation_id', id)
       .order('created_at', { ascending: true });
-
-    console.log('fetched messages:', data);
-    console.log('fetch error:', error);
 
     if (error) {
       console.log('fetch error:', error);
@@ -135,41 +118,28 @@ export default function ChatScreen() {
     setSending(true);
     setNewMessage('');
 
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-    if (!user) {
-      setSending(false);
-      return;
-    }
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) { setSending(false); return; }
 
-    const { data, error } = await supabase
+    const { error } = await supabase
       .from('messages')
-      .insert({
-        conversation_id: id,
-        sender_id: user.id,
-        content: text,
-      })
-      .select();
-
-    console.log('saved message:', data);
-    console.log('save error:', error);
+      .insert({ conversation_id: id, sender_id: user.id, content: text });
 
     if (error) {
       console.log('send error:', error);
-      setNewMessage(text);
+      setNewMessage(text); // restore text so user doesn't lose it
       setError('Failed to send message');
     }
 
     setSending(false);
   }
 
-  // --- Render states ---
+  // --- loading / error states ---
 
   if (loading) {
     return (
       <View className="flex-1 justify-center items-center bg-white">
-        <ActivityIndicator size="large" color="#3b82f6" />
+        <ActivityIndicator size="large" color="#2AABEE" />
       </View>
     );
   }
@@ -179,12 +149,9 @@ export default function ChatScreen() {
       <View className="flex-1 justify-center items-center bg-white px-6">
         <Text className="text-red-500 text-base text-center">{error}</Text>
         <TouchableOpacity
-          className="mt-4 bg-blue-500 px-6 py-3 rounded-full"
-          onPress={() => {
-            setError(null);
-            setLoading(true);
-            fetchMessages();
-          }}
+          className="mt-4 px-6 py-3 rounded-full"
+          style={{ backgroundColor: '#2AABEE' }}
+          onPress={() => { setError(null); setLoading(true); fetchMessages(); }}
         >
           <Text className="text-white font-semibold">Retry</Text>
         </TouchableOpacity>
@@ -194,29 +161,42 @@ export default function ChatScreen() {
 
   return (
     <View style={{ flex: 1, backgroundColor: '#ffffff' }}>
-      {/* Header */}
-      <View className="px-4 py-4 border-b border-gray-200 flex-row items-center">
-        <TouchableOpacity onPress={() => router.back()} className="mr-3">
-          <FontAwesome name="arrow-left" size={20} color="black" />
+
+      {/* Header — Telegram style */}
+      <View
+        className="flex-row items-center px-3 py-2 border-b border-gray-100"
+        style={{ minHeight: 56 }}
+      >
+        {/* Back button — Telegram uses chevron, not arrow */}
+        <TouchableOpacity onPress={() => router.back()} className="p-2 mr-1">
+          <FontAwesome name="chevron-left" size={20} color="#2AABEE" />
         </TouchableOpacity>
-        <View className="w-9 h-9 rounded-full bg-blue-500 justify-center items-center mr-2">
+
+        {/* Avatar with consistent color */}
+        <View
+          className="w-10 h-10 rounded-full justify-center items-center mr-2"
+          style={{ backgroundColor: getAvatarColor(otherUsername) }}
+        >
           <Text className="text-white font-bold text-base">
             {otherUsername?.[0]?.toUpperCase() ?? '?'}
           </Text>
         </View>
-        <Text className="text-xl font-bold">{otherUsername || 'Chat'}</Text>
+
+        {/* Name + online subtitle */}
+        <View className="flex-1">
+        <Text className="text-base font-semibold text-black">{otherUsername || 'Chat'}</Text>
+       </View>
       </View>
 
-      {/* Messages list */}
+      {/* Messages — Telegram uses a very light gray background */}
       <KeyboardAwareScrollView
         ref={scrollViewRef}
-        contentContainerStyle={{ padding: 16, paddingBottom: 8 }}
-        onContentSizeChange={() =>
-          scrollViewRef.current?.scrollToEnd({ animated: false })
-        }
+        contentContainerStyle={{ padding: 12, paddingBottom: 8 }}
+        onContentSizeChange={() => scrollViewRef.current?.scrollToEnd({ animated: false })}
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
         bottomOffset={16}
+        style={{ backgroundColor: '#F0F2F5' }} // Telegram's chat bg color
       >
         {messages.length === 0 ? (
           <View className="justify-center items-center mt-20">
@@ -227,32 +207,48 @@ export default function ChatScreen() {
           messages.map((item) => {
             const isMe = item.sender_id === currentUserId;
             return (
-              <View
-                key={item.id}
-                className={`mb-3 ${isMe ? 'items-end' : 'items-start'}`}
-              >
+              <View key={item.id} className={`mb-2 ${isMe ? 'items-end' : 'items-start'}`}>
                 <View
-                  className={`px-4 py-2 rounded-2xl max-w-xs ${
-                    isMe ? 'bg-blue-500' : 'bg-gray-200'
-                  }`}
+                  style={{
+                    // my messages = Telegram blue, theirs = white card
+                    backgroundColor: isMe ? '#2AABEE' : '#ffffff',
+                    paddingHorizontal: 12,
+                    paddingVertical: 8,
+                    borderRadius: 16,
+                    // Telegram's asymmetric bubble corners
+                    borderBottomRightRadius: isMe ? 4 : 16,
+                    borderBottomLeftRadius: isMe ? 16 : 4,
+                    maxWidth: '80%',
+                    // subtle shadow on received messages
+                    shadowColor: '#000',
+                    shadowOffset: { width: 0, height: 1 },
+                    shadowOpacity: isMe ? 0 : 0.06,
+                    shadowRadius: 2,
+                    elevation: isMe ? 0 : 1,
+                  }}
                 >
-                  <Text className={isMe ? 'text-white' : 'text-black'}>
+                  <Text style={{ color: isMe ? '#ffffff' : '#111827', fontSize: 15 }}>
                     {item.content}
                   </Text>
+                  {/* Timestamp inside bubble — bottom right, like Telegram */}
+                  <Text
+                    style={{
+                      fontSize: 11,
+                      marginTop: 3,
+                      textAlign: 'right',
+                      color: isMe ? 'rgba(255,255,255,0.7)' : '#9CA3AF',
+                    }}
+                  >
+                    {formatMessageTime(item.created_at)}
+                  </Text>
                 </View>
-                <Text className="text-gray-400 text-xs mt-1">
-                  {new Date(item.created_at).toLocaleTimeString([], {
-                    hour: '2-digit',
-                    minute: '2-digit',
-                  })}
-                </Text>
               </View>
             );
           })
         )}
       </KeyboardAwareScrollView>
 
-      {/* Sticky input bar */}
+      {/* Input bar */}
       <ChatInputBar
         value={newMessage}
         onChangeText={setNewMessage}
