@@ -7,100 +7,86 @@ import {
   TextInput,
   ActivityIndicator,
 } from 'react-native';
-import { router } from 'expo-router';
+import { router, Stack } from 'expo-router';
 import { supabase } from '@/utils/supabase';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-// defining profile — isme ye properties honi chahiye
 type Profile = {
   id: string;
   username: string;
   email: string;
 };
 
+// same color logic as index.tsx
+const AVATAR_COLORS = ['#2AABEE', '#E91E63', '#9C27B0', '#FF9800', '#4CAF50', '#F44336', '#00BCD4'];
+function getAvatarColor(name: string) {
+  let hash = 0;
+  for (let i = 0; i < name.length; i++) hash = name.charCodeAt(i) + ((hash << 5) - hash);
+  return AVATAR_COLORS[Math.abs(hash) % AVATAR_COLORS.length];
+}
+
 export default function UsersScreen() {
+  const insets = useSafeAreaInsets();
   const [users, setUsers] = useState<Profile[]>([]);
   const [filtered, setFiltered] = useState<Profile[]>([]);
   const [search, setSearch] = useState('');
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    fetchUsers();
-  }, []);
+  useEffect(() => { fetchUsers(); }, []);
 
-  // Filter users as you type
   useEffect(() => {
     if (search === '') {
       setFiltered(users);
     } else {
+      const q = search.toLowerCase();
       setFiltered(
         users.filter(
           (u) =>
-            u.username.toLowerCase().includes(search.toLowerCase()) ||
-            u.email.toLowerCase().includes(search.toLowerCase())
+            u.username.toLowerCase().includes(q) ||
+            u.email.toLowerCase().includes(q)
         )
       );
     }
   }, [search, users]);
 
-  // backend start
   async function fetchUsers() {
-    const {
-      data: { user },
-    } = await supabase.auth.getUser(); // current user kon hai
-
-    if (!user) {
-      setLoading(false);
-      return;
-    }
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) { setLoading(false); return; }
 
     const { data, error } = await supabase
       .from('profiles')
       .select('id, username, email')
-      .neq('id', user.id); // neq -> not equal to // give me ids that are not my id
+      .neq('id', user.id);
 
-    if (error) {
-      console.log('fetchUsers error:', error);
-    }
-
+    if (error) console.log('fetchUsers error:', error);
     setUsers(data || []);
     setFiltered(data || []);
     setLoading(false);
   }
 
   async function startConversation(otherUserId: string) {
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+    const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
 
-    // 1. Check if a conversation already exists between both users
     const { data: existing, error: existingError } = await supabase.rpc(
       'find_conversation',
       { other_user_id: otherUserId }
     );
-
-    if (existingError) {
-      console.log('find_conversation error:', existingError);
-    }
+    if (existingError) console.log('find_conversation error:', existingError);
 
     if (existing) {
-      // Already have a chat → just go there
       router.replace(`/chat/${existing}`);
       return;
     }
 
-    // 2. No existing chat → create a new one
     const { data: conversation, error: convError } = await supabase
       .from('conversations')
       .insert({})
       .select()
       .single();
 
-    if (convError) {
-      console.log('conv error:', convError);
-      return;
-    }
+    if (convError) { console.log('conv error:', convError); return; }
 
     const { error: membersError } = await supabase
       .from('conversation_members')
@@ -109,70 +95,113 @@ export default function UsersScreen() {
         { conversation_id: conversation.id, user_id: otherUserId },
       ]);
 
-    if (membersError) {
-      console.log('members error:', membersError);
-      return;
-    }
+    if (membersError) { console.log('members error:', membersError); return; }
 
     router.replace(`/chat/${conversation.id}`);
   }
 
   return (
-    <View className="flex-1 bg-white">
-      {/* Header */}
-      <View className="px-4 py-4 border-b border-gray-200">
-        {/* Search bar */}
-        <View className="flex-row items-center bg-gray-100 rounded-xl px-3 py-2">
-          <FontAwesome name="search" size={16} color="gray" />
+    <View style={{ flex: 1, backgroundColor: '#fff', paddingTop: insets.top }}>
+      <Stack.Screen options={{ headerShown: false }} />
+
+      {/* Header — same style as index */}
+      <View style={{
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingHorizontal: 16,
+        paddingVertical: 12,
+        borderBottomWidth: 0.5,
+        borderBottomColor: '#e5e5ea',
+      }}>
+        <TouchableOpacity onPress={() => router.back()} style={{ marginRight: 12, padding: 4 }}>
+          <FontAwesome name="arrow-left" size={18} color="#0f172a" />
+        </TouchableOpacity>
+        <Text style={{ fontSize: 20, fontWeight: '700', color: '#000', flex: 1 }}>
+          New chat
+        </Text>
+      </View>
+
+      {/* Search bar — same style as index */}
+      <View style={{ paddingHorizontal: 12, paddingTop: 10, paddingBottom: 6 }}>
+        <View style={{
+          flexDirection: 'row',
+          alignItems: 'center',
+          backgroundColor: '#f2f2f7',
+          borderRadius: 12,
+          paddingHorizontal: 12,
+          paddingVertical: 9,
+        }}>
+          <FontAwesome name="search" size={15} color="#8E8E93" />
           <TextInput
-            className="flex-1 ml-2 text-base"
+            style={{ flex: 1, marginLeft: 8, fontSize: 15, color: '#000' }}
             placeholder="Search by username or email..."
+            placeholderTextColor="#8E8E93"
             value={search}
             onChangeText={setSearch}
             autoFocus
             autoCapitalize="none"
+            autoCorrect={false}
           />
           {search.length > 0 && (
             <TouchableOpacity onPress={() => setSearch('')}>
-              <FontAwesome name="times" size={16} color="gray" />
+              <FontAwesome name="times-circle" size={16} color="#8E8E93" />
             </TouchableOpacity>
           )}
         </View>
       </View>
 
-      {/* Loading spinner */}
       {loading ? (
-        <View className="flex-1 justify-center items-center">
-          <ActivityIndicator size="large" color="#3b82f6" />
-          <Text className="text-gray-400 mt-3">Loading users...</Text>
+        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+          <ActivityIndicator size="large" color="#2AABEE" />
         </View>
       ) : (
-        /* Users List */
         <FlatList
           data={filtered}
           keyExtractor={(item) => item.id}
+          contentContainerStyle={filtered.length === 0 ? { flex: 1 } : undefined}
           renderItem={({ item }) => (
             <TouchableOpacity
-              className="px-4 py-4 border-b border-gray-100 flex-row items-center"
+              style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 8, minHeight: 72 }}
+              activeOpacity={0.6}
               onPress={() => startConversation(item.id)}
             >
-              {/* Avatar */}
-              <View className="w-12 h-12 rounded-full bg-blue-500 justify-center items-center mr-3">
-                <Text className="text-white font-bold text-lg">
+              {/* colored avatar — same as index */}
+              <View style={{
+                width: 54,
+                height: 54,
+                borderRadius: 27,
+                backgroundColor: getAvatarColor(item.username),
+                justifyContent: 'center',
+                alignItems: 'center',
+                marginRight: 12,
+              }}>
+                <Text style={{ color: '#fff', fontSize: 22, fontWeight: '700' }}>
                   {item.username?.[0]?.toUpperCase() ?? '?'}
                 </Text>
               </View>
 
-              {/* Info */}
-              <View>
-                <Text className="font-semibold text-base">{item.username}</Text>
-                <Text className="text-gray-500 text-sm">{item.email}</Text>
+              {/* name + email with bottom border like index */}
+              <View style={{
+                flex: 1,
+                borderBottomWidth: 0.5,
+                borderBottomColor: '#e5e5ea',
+                paddingVertical: 10,
+                minHeight: 72,
+                justifyContent: 'center',
+              }}>
+                <Text style={{ fontSize: 16, fontWeight: '600', color: '#000' }}>
+                  {item.username}
+                </Text>
+                <Text style={{ fontSize: 13, color: '#8E8E93', marginTop: 2 }}>
+                  {item.email}
+                </Text>
               </View>
             </TouchableOpacity>
           )}
           ListEmptyComponent={
-            <View className="flex-1 justify-center items-center mt-20">
-              <Text className="text-gray-400">
+            <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', gap: 8 }}>
+              <FontAwesome name="users" size={40} color="#e2e8f0" />
+              <Text style={{ color: '#8E8E93', fontSize: 15 }}>
                 {search ? 'No users found' : 'No users yet'}
               </Text>
             </View>
