@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { View, Text, FlatList, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { router } from 'expo-router';
+import { useSafeAreaInsets } from 'react-native-safe-area-context'; // gives us the status bar / gesture bar sizes
 import { supabase } from '@/utils/supabase';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 
@@ -14,12 +15,13 @@ type Conversation = {
 // gives each username a consistent color like Telegram does
 const AVATAR_COLORS = ['#2AABEE', '#E91E63', '#9C27B0', '#FF9800', '#4CAF50', '#F44336', '#00BCD4'];
 function getAvatarColor(name: string) {
+  // simple string hash -> same name always maps to the same color
   let hash = 0;
   for (let i = 0; i < name.length; i++) hash = name.charCodeAt(i) + ((hash << 5) - hash);
   return AVATAR_COLORS[Math.abs(hash) % AVATAR_COLORS.length];
 }
 
-// formats time exactly like Telegram — "3:11 PM" for today, "Mon" for this week, "17/09" for older
+// formats time like Telegram — "3:11 PM" for today, "Mon" for this week, "17/09" for older
 function formatTime(isoString: string) {
   const date = new Date(isoString);
   const now = new Date();
@@ -35,12 +37,17 @@ function formatTime(isoString: string) {
 }
 
 export default function ChatsScreen() {
+  // insets.top = height of the status bar / camera cutout, measured by the OS.
+  // With edge-to-edge on Android, the app draws behind it, so we pad manually.
+  const insets = useSafeAreaInsets();
+
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     fetchConversations();
 
+    // realtime: whenever a new message is inserted, refetch the list so previews stay fresh
     const channel = supabase
       .channel('conversations-updates')
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' }, () => {
@@ -48,6 +55,7 @@ export default function ChatsScreen() {
       })
       .subscribe();
 
+    // cleanup on unmount so we don't leak subscriptions
     return () => { supabase.removeChannel(channel); };
   }, []);
 
@@ -58,20 +66,22 @@ export default function ChatsScreen() {
     setLoading(false);
   }
 
+  // same top padding on the loading screen so the layout doesn't jump once data arrives
   if (loading) {
     return (
-      <View className="flex-1 justify-center items-center bg-white">
+      <View className="flex-1 justify-center items-center bg-white" style={{ paddingTop: insets.top }}>
         <ActivityIndicator size="large" color="#2AABEE" />
       </View>
     );
   }
 
   return (
-    <View className="flex-1 bg-white">
+    // paddingTop pushes everything below the status bar; bg-white fills the area behind it
+    <View className="flex-1 bg-white" style={{ paddingTop: insets.top }}>
 
-      {/* Telegram-style search bar */}
+      {/* Telegram-style search bar (mt-3 -> mt-1 because the inset already adds space above) */}
       <TouchableOpacity
-        className="mx-3 mt-3 mb-2 flex-row items-center bg-gray-100 rounded-xl px-4 py-2.5"
+        className="mx-3 mt-1 mb-2 flex-row items-center bg-gray-100 rounded-xl px-4 py-2.5"
         onPress={() => router.push('/users')}
         activeOpacity={0.7}
       >
@@ -106,7 +116,10 @@ export default function ChatsScreen() {
               </View>
 
               {/* Name + last message */}
-              <View className="flex-1 border-b border-gray-100 py-2" style={{ minHeight: 72, justifyContent: 'center' }}>
+              <View
+                className="flex-1 border-b border-gray-100 py-2"
+                style={{ minHeight: 72, justifyContent: 'center' }}
+              >
                 <View className="flex-row justify-between items-center">
                   {/* Bold username like Telegram */}
                   <Text className="text-base font-semibold text-black flex-1 mr-2" numberOfLines={1}>

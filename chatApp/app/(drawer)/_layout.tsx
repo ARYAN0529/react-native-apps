@@ -1,27 +1,13 @@
-import { Drawer } from 'expo-router/drawer';
+import { Stack } from 'expo-router';
 
-const DrawerLayout = () => {
+export default function AppLayout() {
+  // Stack is just a container here: it renders (tabs) and nothing else.
+  // With no "index" screen in this folder, there is nothing earlier in history,
+  // so pressing back on the chats list exits the app (like WhatsApp / Telegram).
   return (
-    <Drawer
-      screenOptions={{
-        headerShown: false,        // hide drawer's own header — tabs handle their own
-        drawerType: 'slide',
-        swipeEnabled: false,       // disable swipe-to-open so it doesn't conflict with chat gestures
-        drawerStyle: {
-          width: 0,                // effectively hides the drawer — you're using tabs for nav
-        },
-      }}
-    >
-      <Drawer.Screen
-        name="index"
-        options={{ headerShown: false }}
-      />
-      <Drawer.Screen
-        name="(tabs)"
-        options={{ headerShown: false }}
-      />
-    </Drawer>
+    <Stack screenOptions={{ headerShown: false }}>
+      {/* tabs own their own headers/UI, so the stack never shows one */}
+      <Stack.Screen name="(tabs)" />
+    </Stack>
   );
-};
-
-export default DrawerLayout;
+}

@@ -3,9 +3,11 @@
     "name": "ChatApp",
     "slug": "chatapp",
     "version": "1.0.0",
-
     "scheme": "chatapp",
-    "platforms": ["ios", "android"],
+    "platforms": [
+      "ios",
+      "android"
+    ],
     "web": {
       "bundler": "metro",
       "output": "static",
@@ -17,38 +19,37 @@
         "expo-splash-screen",
         {
           "image": "./assets/logo.png",
-  "resizeMode": "contain",
+          "resizeMode": "contain",
           "backgroundColor": "#ffffff"
         }
       ]
     ],
     "experiments": {
       "typedRoutes": true,
-
       "tsconfigPaths": true
     },
-
     "orientation": "portrait",
     "icon": "./assets/logo.png",
-
     "userInterfaceStyle": "light",
-
-    "assetBundlePatterns": ["**/*"],
+    "assetBundlePatterns": [
+      "**/*"
+    ],
     "ios": {
       "supportsTablet": true
     },
-
-
-  "android": {
-  "softwareKeyboardLayoutMode": "pan",
-  "package": "com.aryan.chatapp",
-  "adaptiveIcon": {
-    "foregroundImage": "./assets/adaptive-icon.png",
-    "backgroundColor": "#ffffff"
-  }
-}
-
-
-
+    "android": {
+      "softwareKeyboardLayoutMode": "pan",
+      "package": "com.aryan.chatapp",
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#ffffff"
+      }
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "698218cf-757a-48d2-b7ae-3e065770b61b"
+      }
+    }
   }
 }

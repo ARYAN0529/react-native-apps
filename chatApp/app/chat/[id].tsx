@@ -6,6 +6,7 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { useLocalSearchParams, router } from 'expo-router';
+import { useSafeAreaInsets } from 'react-native-safe-area-context'; // status bar / gesture bar sizes
 import { supabase } from '@/utils/supabase';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';
@@ -32,6 +33,10 @@ function formatMessageTime(isoString: string) {
 }
 
 export default function ChatScreen() {
+  // insets.top = status bar height. Edge-to-edge Android draws behind it,
+  // so we push our content down manually.
+  const insets = useSafeAreaInsets();
+
   const { id } = useLocalSearchParams<{ id: string }>();
   const [messages, setMessages] = useState<Message[]>([]);
   const [newMessage, setNewMessage] = useState('');
@@ -134,11 +139,11 @@ export default function ChatScreen() {
     setSending(false);
   }
 
-  // --- loading / error states ---
+  // --- loading / error states (same top padding so nothing hides under the status bar) ---
 
   if (loading) {
     return (
-      <View className="flex-1 justify-center items-center bg-white">
+      <View className="flex-1 justify-center items-center bg-white" style={{ paddingTop: insets.top }}>
         <ActivityIndicator size="large" color="#2AABEE" />
       </View>
     );
@@ -146,7 +151,7 @@ export default function ChatScreen() {
 
   if (error) {
     return (
-      <View className="flex-1 justify-center items-center bg-white px-6">
+      <View className="flex-1 justify-center items-center bg-white px-6" style={{ paddingTop: insets.top }}>
         <Text className="text-red-500 text-base text-center">{error}</Text>
         <TouchableOpacity
           className="mt-4 px-6 py-3 rounded-full"
@@ -160,7 +165,8 @@ export default function ChatScreen() {
   }
 
   return (
-    <View style={{ flex: 1, backgroundColor: '#ffffff' }}>
+    // white root + paddingTop = white area behind the status bar, header starts right below it
+    <View style={{ flex: 1, backgroundColor: '#ffffff', paddingTop: insets.top }}>
 
       {/* Header — Telegram style */}
       <View
@@ -184,8 +190,8 @@ export default function ChatScreen() {
 
         {/* Name + online subtitle */}
         <View className="flex-1">
-        <Text className="text-base font-semibold text-black">{otherUsername || 'Chat'}</Text>
-       </View>
+          <Text className="text-base font-semibold text-black">{otherUsername || 'Chat'}</Text>
+        </View>
       </View>
 
       {/* Messages — Telegram uses a very light gray background */}
