@@ -1,16 +1,17 @@
 # ChatApp 💬
 
-A real-time mobile chat application built with React Native (Expo) and Supabase.
+A real-time mobile chat application built with React Native (Expo) and Supabase, with a Telegram-style UI.
 
 ---
 
 ## Features
 
-- 🔐 Email/Password Authentication
+- 🔐 Email/Password authentication
 - 💬 Real-time messaging via Supabase WebSockets
 - 👥 One-on-one conversations
 - 🔍 Search users to start a chat
-- 📱 Cross-platform (Android & iOS)
+- 🎨 Telegram-style chat list and message bubbles
+- 📱 Android (APK build available), iOS not tested yet
 - 🗄️ Persistent message storage with Supabase
 
 ---
@@ -20,7 +21,7 @@ A real-time mobile chat application built with React Native (Expo) and Supabase.
 | Category | Technology |
 |---|---|
 | Framework | React Native (Expo) |
-| Navigation | Expo Router (Drawer + Tabs) |
+| Navigation | Expo Router (Stack + Tabs) |
 | Backend | Supabase (Auth + Postgres + Realtime) |
 | State Management | Zustand |
 | Styling | NativeWind (Tailwind CSS) |
@@ -32,7 +33,7 @@ A real-time mobile chat application built with React Native (Expo) and Supabase.
 ## Project Structure
 
 ```
-ChatApp/
+chatApp/
 ├── app/
 │   ├── (auth)/
 │   │   ├── _layout.tsx       # Auth stack layout
@@ -43,13 +44,14 @@ ChatApp/
 │   │   │   ├── _layout.tsx   # Tab layout
 │   │   │   ├── index.tsx     # Chats list screen
 │   │   │   └── two.tsx       # Settings screen
-│   │   ├── _layout.tsx       # Drawer layout
-│   │   └── index.tsx         # Drawer home
+│   │   └── _layout.tsx       # Wrapper layout for the tabs
 │   ├── chat/
 │   │   └── [id].tsx          # Individual chat screen
 │   ├── users.tsx             # User search screen
 │   └── _layout.tsx           # Root layout with auth redirect
 ├── components/               # Reusable components
+├── database/
+│   └── schema.sql            # Tables, RPC functions, RLS policies
 ├── store/
 │   └── store.ts              # Zustand store
 ├── utils/
@@ -75,23 +77,29 @@ conversation_members (id, conversation_id, user_id, joined_at)
 messages (id, conversation_id, sender_id, content, created_at)
 ```
 
+**RPC functions used by the app:**
+
+- `get_my_conversations()` returns the current user's chats with the last message
+- `get_conversation_partner(conv_id)` returns the other user in a chat
+
+**Row Level Security** is enabled on all tables, so users can only read conversations and messages they belong to.
+
 ---
 
 ## Getting Started
 
 ### Prerequisites
 
-- Node.js 18+
-- Expo CLI
-- Supabase account
-- Expo Go app (for development)
+- Node.js (use the minimum version your Expo SDK requires, see the Expo docs)
+- A Supabase account
+- An Android phone or emulator
 
 ### Installation
 
 ```bash
 # Clone the repo
 git clone https://github.com/ARYAN0529/react-native-apps.git
-cd react-native-apps/ChatApp
+cd react-native-apps/chatApp
 
 # Install dependencies
 npm install
@@ -102,7 +110,7 @@ cp .env.example .env
 
 ### Environment Variables
 
-Create a `.env` file in the root:
+Fill in your `.env` file in the `chatApp` folder:
 
 ```
 EXPO_PUBLIC_SUPABASE_URL=your_supabase_url
@@ -111,20 +119,42 @@ EXPO_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
 
 ### Run the app
 
-```bash
-npx expo start
-```
+This project uses a development build (not plain Expo Go):
 
-Scan the QR code with Expo Go on your phone.
+```bash
+# one-time: build and install the dev client on your phone
+npm run build:dev
+
+# then start the dev server
+npx expo start --dev-client
+```
 
 ---
 
 ## Supabase Setup
 
 1. Create a new Supabase project
-2. Run the SQL schema from `database/schema.sql`
+2. Run `database/schema.sql` in the SQL editor (tables, RPC functions, RLS)
 3. Enable Realtime on the `messages` table
-4. Copy your project URL and anon key to `.env`
+4. Copy your project URL and anon key into `.env`
+
+---
+
+## Build an APK
+
+```bash
+eas login
+eas build -p android --profile preview
+```
+
+The cloud build can't see your local `.env`, so set the Supabase variables in EAS first:
+
+```bash
+eas env:create --name EXPO_PUBLIC_SUPABASE_URL --environment preview
+eas env:create --name EXPO_PUBLIC_SUPABASE_ANON_KEY --environment preview
+```
+
+When the build finishes, download the `.apk` from the link EAS prints and install it on your phone.
 
 ---
 
@@ -146,7 +176,7 @@ Message added to UI without page refresh
 
 ## Screenshots
 
-> Add screenshots here
+![Chats](screenshots/chats.png) ![Chat](screenshots/chat.png)
 
 ---
 
