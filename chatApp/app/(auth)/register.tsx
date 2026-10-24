@@ -131,13 +131,13 @@ export default function Register() {
 
             {/* Register Button */}
             <TouchableOpacity
-              className={`mt-2 h-14 items-center justify-center rounded-xl ${
-                loading ? 'bg-blue-300' : 'bg-blue-600'
-              }`}
-              onPress={handleRegister}
-              disabled={loading}
-              activeOpacity={0.8}
-            >
+          className={`mt-2 h-14 items-center justify-center rounded-xl ${
+        loading ? 'bg-neutral-500' : 'bg-black'  // black normally, gray while loading
+         }`}
+        onPress={handleRegister}
+        disabled={loading}
+          activeOpacity={0.8}
+        >
               <Text className="text-base font-semibold text-white">
                 {loading ? 'Creating account...' : 'Create account'}
               </Text>

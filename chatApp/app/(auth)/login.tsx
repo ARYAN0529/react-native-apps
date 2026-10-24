@@ -95,18 +95,18 @@ export default function Login() {
             </View>
 
             {/* Login Button */}
-            <TouchableOpacity
-              className={`mt-2 h-14 items-center justify-center rounded-xl ${
-                loading ? 'bg-blue-300' : 'bg-blue-600'
-              }`}
-              onPress={handleLogin}
-              disabled={loading}
-              activeOpacity={0.8}
-            >
-              <Text className="text-base font-semibold text-white">
-                {loading ? 'Logging in...' : 'Login'}
-              </Text>
-            </TouchableOpacity>
+<TouchableOpacity
+  className={`mt-2 h-14 items-center justify-center rounded-xl ${
+    loading ? 'bg-neutral-500' : 'bg-black'  // black normally, gray while loading so it reads as disabled
+  }`}
+  onPress={handleLogin}
+  disabled={loading}
+  activeOpacity={0.8}
+>
+        <Text className="text-base font-semibold text-white">
+        {loading ? 'Logging in...' : 'Login'}
+            </Text>
+          </TouchableOpacity>
           </View>
 
           {/* Register */}
