@@ -1,6 +1,10 @@
 import { Tabs } from 'expo-router';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 
+
+//this is the bottom navbar (Chats + Settings
+
+
 export default function TabLayout() {
   return (
     <Tabs

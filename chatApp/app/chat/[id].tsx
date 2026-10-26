@@ -19,7 +19,7 @@ type Message = {
   created_at: string;
 };
 
-// same color logic as chat list — consistent avatar color per username
+// same color logic as chat list, consistent avatar color per username
 const AVATAR_COLORS = ['#2AABEE', '#E91E63', '#9C27B0', '#FF9800', '#4CAF50', '#F44336', '#00BCD4'];
 function getAvatarColor(name: string) {
   let hash = 0;
@@ -27,7 +27,7 @@ function getAvatarColor(name: string) {
   return AVATAR_COLORS[Math.abs(hash) % AVATAR_COLORS.length];
 }
 
-// formats message timestamp — just HH:MM inside chat
+// formats message timestamp, just HH:MM inside chat
 function formatMessageTime(isoString: string) {
   return new Date(isoString).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 }
@@ -37,7 +37,14 @@ export default function ChatScreen() {
   // so we push our content down manually.
   const insets = useSafeAreaInsets();
 
-  const { id } = useLocalSearchParams<{ id: string }>();
+  // id = real conversation id, OR the placeholder 'new' for a draft chat.
+  // userId + username are only passed for drafts (the person we're about to message).
+  const { id, userId, username } = useLocalSearchParams<{
+    id: string;
+    userId?: string;
+    username?: string;
+  }>();
+
   const [messages, setMessages] = useState<Message[]>([]);
   const [newMessage, setNewMessage] = useState('');
   const [currentUserId, setCurrentUserId] = useState('');
@@ -61,6 +68,14 @@ export default function ChatScreen() {
           return;
         }
         setCurrentUserId(user.id);
+
+        // draft chat: nothing in the DB yet, so skip fetching messages and
+        // the realtime subscription. Just show the header and an empty screen.
+        if (id === 'new') {
+          setOtherUsername(username ?? '');
+          setLoading(false);
+          return;
+        }
 
         // get the other person's username via RPC
         const { data: partner, error: partnerError } = await supabase.rpc(
@@ -126,14 +141,54 @@ export default function ChatScreen() {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) { setSending(false); return; }
 
+    let conversationId = id;
+
+    // first message of a draft chat: create the conversation NOW
+    if (id === 'new') {
+      const { data: conv, error: convError } = await supabase
+        .from('conversations')
+        .insert({})
+        .select()
+        .single();
+
+      if (convError || !conv) {
+        console.log('conv error:', convError);
+        setNewMessage(text); // give the text back so nothing is lost
+        setError('Failed to send message');
+        setSending(false);
+        return;
+      }
+
+      const { error: membersError } = await supabase
+        .from('conversation_members')
+        .insert([
+          { conversation_id: conv.id, user_id: user.id },
+          { conversation_id: conv.id, user_id: userId },
+        ]);
+
+      if (membersError) {
+        console.log('members error:', membersError);
+        setNewMessage(text);
+        setError('Failed to send message');
+        setSending(false);
+        return;
+      }
+
+      conversationId = conv.id;
+    }
+
     const { error } = await supabase
       .from('messages')
-      .insert({ conversation_id: id, sender_id: user.id, content: text });
+      .insert({ conversation_id: conversationId, sender_id: user.id, content: text });
 
     if (error) {
       console.log('send error:', error);
-      setNewMessage(text); // restore text so user doesn't lose it
+      setNewMessage(text);
       setError('Failed to send message');
+    } else if (id === 'new') {
+      // swap the draft for the real chat; it remounts, loads the message
+      // and starts the realtime subscription with the real id
+      router.replace(`/chat/${conversationId}`);
     }
 
     setSending(false);
@@ -156,7 +211,11 @@ export default function ChatScreen() {
         <TouchableOpacity
           className="mt-4 px-6 py-3 rounded-full"
           style={{ backgroundColor: '#2AABEE' }}
-          onPress={() => { setError(null); setLoading(true); fetchMessages(); }}
+          onPress={() => {
+            setError(null);
+            // a draft has nothing to fetch, so only refetch for real chats
+            if (id !== 'new') { setLoading(true); fetchMessages(); }
+          }}
         >
           <Text className="text-white font-semibold">Retry</Text>
         </TouchableOpacity>
@@ -168,12 +227,12 @@ export default function ChatScreen() {
     // white root + paddingTop = white area behind the status bar, header starts right below it
     <View style={{ flex: 1, backgroundColor: '#ffffff', paddingTop: insets.top }}>
 
-      {/* Header — Telegram style */}
+      {/* Header, Telegram style */}
       <View
         className="flex-row items-center px-3 py-2 border-b border-gray-100"
         style={{ minHeight: 56 }}
       >
-        {/* Back button — Telegram uses chevron, not arrow */}
+        {/* Back button, Telegram uses chevron, not arrow */}
         <TouchableOpacity onPress={() => router.back()} className="p-2 mr-1">
           <FontAwesome name="chevron-left" size={20} color="#2AABEE" />
         </TouchableOpacity>
@@ -188,13 +247,13 @@ export default function ChatScreen() {
           </Text>
         </View>
 
-        {/* Name + online subtitle */}
+        {/* Name */}
         <View className="flex-1">
           <Text className="text-base font-semibold text-black">{otherUsername || 'Chat'}</Text>
         </View>
       </View>
 
-      {/* Messages — Telegram uses a very light gray background */}
+      {/* Messages, Telegram uses a very light gray background */}
       <KeyboardAwareScrollView
         ref={scrollViewRef}
         contentContainerStyle={{ padding: 12, paddingBottom: 8 }}
@@ -236,7 +295,7 @@ export default function ChatScreen() {
                   <Text style={{ color: isMe ? '#ffffff' : '#111827', fontSize: 15 }}>
                     {item.content}
                   </Text>
-                  {/* Timestamp inside bubble — bottom right, like Telegram */}
+                  {/* Timestamp inside bubble, bottom right, like Telegram */}
                   <Text
                     style={{
                       fontSize: 11,

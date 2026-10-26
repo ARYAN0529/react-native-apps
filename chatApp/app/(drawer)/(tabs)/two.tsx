@@ -1,5 +1,5 @@
 //setting's page 
-
+//Settings tab
 import { useEffect, useRef } from 'react';
 import {
   View,

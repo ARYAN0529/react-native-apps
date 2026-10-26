@@ -5,6 +5,11 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context'; // gives us 
 import { supabase } from '@/utils/supabase';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 
+
+
+// Chats list tab
+
+
 type Conversation = {
   conversation_id: string;
   username: string;
