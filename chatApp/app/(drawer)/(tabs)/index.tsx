@@ -1,14 +1,10 @@
+// Chats list tab
 import { useEffect, useState } from 'react';
 import { View, Text, FlatList, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { router } from 'expo-router';
-import { useSafeAreaInsets } from 'react-native-safe-area-context'; // gives us the status bar / gesture bar sizes
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { supabase } from '@/utils/supabase';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
-
-
-
-// Chats list tab
-
 
 type Conversation = {
   conversation_id: string;
@@ -17,33 +13,39 @@ type Conversation = {
   last_message_at: string | null;
 };
 
-// gives each username a consistent color like Telegram does
+// same name always maps to the same avatar color
 const AVATAR_COLORS = ['#2AABEE', '#E91E63', '#9C27B0', '#FF9800', '#4CAF50', '#F44336', '#00BCD4'];
 function getAvatarColor(name: string) {
-  // simple string hash -> same name always maps to the same color
   let hash = 0;
   for (let i = 0; i < name.length; i++) hash = name.charCodeAt(i) + ((hash << 5) - hash);
   return AVATAR_COLORS[Math.abs(hash) % AVATAR_COLORS.length];
 }
 
-// formats time like Telegram — "3:11 PM" for today, "Mon" for this week, "17/09" for older
+// "3:11 PM" for today, "Mon" for this week, "17/09" for older
 function formatTime(isoString: string) {
   const date = new Date(isoString);
   const now = new Date();
-  const diffDays = Math.floor((now.getTime() - date.getTime()) / 86400000);
+
+  // compare calendar days (midnight to midnight), not raw 24h gaps
+  const startOfDay = (d: Date) => new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
+  const diffDays = Math.round((startOfDay(now) - startOfDay(date)) / 86400000);
 
   if (diffDays === 0) {
     return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
   } else if (diffDays < 7) {
-    return date.toLocaleDateString([], { weekday: 'short' }); // "Mon", "Tue"
+    return date.toLocaleDateString([], { weekday: 'short' });
   } else {
-    return date.toLocaleDateString([], { day: '2-digit', month: '2-digit' }); // "17/09"
+    return date.toLocaleDateString([], { day: '2-digit', month: '2-digit' });
   }
 }
 
+// thin line between chats, starts after the avatar (16 padding + 56 avatar + 12 gap = 84)
+function Separator() {
+  return <View style={{ height: 0.5, marginLeft: 84, backgroundColor: '#E0E0E0' }} />;
+}
+
 export default function ChatsScreen() {
-  // insets.top = height of the status bar / camera cutout, measured by the OS.
-  // With edge-to-edge on Android, the app draws behind it, so we pad manually.
+  // status bar height; edge-to-edge Android draws behind it, so we pad manually
   const insets = useSafeAreaInsets();
 
   const [conversations, setConversations] = useState<Conversation[]>([]);
@@ -52,7 +54,7 @@ export default function ChatsScreen() {
   useEffect(() => {
     fetchConversations();
 
-    // realtime: whenever a new message is inserted, refetch the list so previews stay fresh
+    // realtime: any new message -> refetch so previews and order stay fresh
     const channel = supabase
       .channel('conversations-updates')
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' }, () => {
@@ -60,7 +62,7 @@ export default function ChatsScreen() {
       })
       .subscribe();
 
-    // cleanup on unmount so we don't leak subscriptions
+    // cleanup so we don't leak subscriptions
     return () => { supabase.removeChannel(channel); };
   }, []);
 
@@ -71,74 +73,72 @@ export default function ChatsScreen() {
     setLoading(false);
   }
 
-  // same top padding on the loading screen so the layout doesn't jump once data arrives
+  // same padding + background as the real screen so nothing jumps when data arrives
   if (loading) {
     return (
-      <View className="flex-1 justify-center items-center bg-white" style={{ paddingTop: insets.top }}>
+      <View className="flex-1 items-center justify-center bg-[#F7F7F5]" style={{ paddingTop: insets.top }}>
         <ActivityIndicator size="large" color="#2AABEE" />
       </View>
     );
   }
 
   return (
-    // paddingTop pushes everything below the status bar; bg-white fills the area behind it
-    <View className="flex-1 bg-white" style={{ paddingTop: insets.top }}>
+    <View className="flex-1 bg-[#F7F7F5]" style={{ paddingTop: insets.top }}>
 
-      {/* Telegram-style search bar (mt-3 -> mt-1 because the inset already adds space above) */}
-      <TouchableOpacity
-        className="mx-3 mt-1 mb-2 flex-row items-center bg-gray-100 rounded-xl px-4 py-2.5"
-        onPress={() => router.push('/users')}
-        activeOpacity={0.7}
-      >
-        <FontAwesome name="search" size={15} color="#8E8E93" />
-        <Text className="ml-2 text-gray-400 text-base">Search</Text>
-      </TouchableOpacity>
+      {/* Header row: title on the left, search button on the right */}
+      <View className="flex-row items-center justify-between px-4 pb-3 pt-2">
+        <Text className="text-3xl font-bold tracking-tight text-gray-900">Chats</Text>
+
+        {/* opens the user picker */}
+        <TouchableOpacity
+          onPress={() => router.push('/users')}
+          activeOpacity={0.7}
+          className="h-10 w-10 items-center justify-center rounded-full bg-gray-200"
+        >
+          <FontAwesome name="search" size={16} color="#1C1C1C" />
+        </TouchableOpacity>
+      </View>
 
       {conversations.length === 0 ? (
-        <View className="flex-1 justify-center items-center">
-          <Text className="text-gray-400 text-base">No conversations yet</Text>
-          <Text className="text-gray-400 text-sm mt-1">Search a user to start chatting</Text>
+        <View className="flex-1 items-center justify-center">
+          <Text className="text-base text-gray-400">No conversations yet</Text>
+          <Text className="mt-1 text-sm text-gray-400">Tap search to start chatting</Text>
         </View>
       ) : (
         <FlatList
           data={conversations}
           keyExtractor={(item) => item.conversation_id}
+          // FlatList draws this between rows only, so no line after the last chat
+          ItemSeparatorComponent={Separator}
           renderItem={({ item }) => (
             <TouchableOpacity
-              className="flex-row items-center px-4 py-2"
-              style={{ minHeight: 72 }}
+              className="flex-row items-center px-4 py-3"
               onPress={() => router.push(`/chat/${item.conversation_id}`)}
               activeOpacity={0.6}
             >
-              {/* Colored avatar with first letter */}
+              {/* colored avatar with first letter */}
               <View
-                className="w-14 h-14 rounded-full justify-center items-center mr-3"
+                className="mr-3 h-14 w-14 items-center justify-center rounded-full"
                 style={{ backgroundColor: getAvatarColor(item.username) }}
               >
-                <Text className="text-white font-bold text-xl">
+                <Text className="text-xl font-bold text-white">
                   {item.username?.[0]?.toUpperCase() ?? '?'}
                 </Text>
               </View>
 
-              {/* Name + last message */}
-              <View
-                className="flex-1 border-b border-gray-100 py-2"
-                style={{ minHeight: 72, justifyContent: 'center' }}
-              >
-                <View className="flex-row justify-between items-center">
-                  {/* Bold username like Telegram */}
-                  <Text className="text-base font-semibold text-black flex-1 mr-2" numberOfLines={1}>
+              {/* name + time on top, last message below */}
+              <View className="flex-1">
+                <View className="flex-row items-center justify-between">
+                  <Text className="mr-2 flex-1 text-base font-semibold text-black" numberOfLines={1}>
                     {item.username}
                   </Text>
-                  {/* Timestamp — top right */}
                   {item.last_message_at && (
                     <Text style={{ fontSize: 12, color: '#8E8E93' }}>
                       {formatTime(item.last_message_at)}
                     </Text>
                   )}
                 </View>
-                {/* Last message preview */}
-                <Text className="text-sm mt-0.5" style={{ color: '#8E8E93' }} numberOfLines={1}>
+                <Text className="mt-0.5 text-sm" style={{ color: '#8E8E93' }} numberOfLines={1}>
                   {item.last_message ?? 'No messages yet'}
                 </Text>
               </View>

@@ -6,6 +6,9 @@ import { useStore } from '@/store/store';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+//setting page
+// edit profile is not created 
+
 type RowProps = {
   icon: keyof typeof Ionicons.glyphMap;
   label: string;

@@ -1,4 +1,6 @@
 import { useState } from 'react';
+
+// only animation left 
 import {
   View,
   Text,
@@ -39,7 +41,7 @@ export default function Login() {
 
   return (
     <KeyboardAvoidingView
-      className="flex-1 bg-white"
+      className="flex-1 bg-[#F7F7F5]"
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
       <ScrollView
