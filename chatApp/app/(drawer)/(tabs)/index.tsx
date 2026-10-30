@@ -86,7 +86,7 @@ export default function ChatsScreen() {
     <View className="flex-1 bg-[#F7F7F5]" style={{ paddingTop: insets.top }}>
 
       {/* Header row: title on the left, search button on the right */}
-      <View className="flex-row items-center justify-between px-4 pb-3 pt-2">
+      <View className="flex-row items-center justify-between px-4 pb-3 pt-4">
         <Text className="text-3xl font-bold tracking-tight text-gray-900">Chats</Text>
 
         {/* opens the user picker */}

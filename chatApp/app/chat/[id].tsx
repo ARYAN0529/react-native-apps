@@ -261,7 +261,7 @@ export default function ChatScreen() {
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
         bottomOffset={16}
-        style={{ backgroundColor: '#F0F2F5' }} // Telegram's chat bg color
+        style={{ backgroundColor: '#F7F7F5' }} // Telegram's chat bg color
       >
         {messages.length === 0 ? (
           <View className="justify-center items-center mt-20">
