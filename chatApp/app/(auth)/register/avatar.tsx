@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { View, Text, Image, TouchableOpacity, Alert } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
+import { File } from 'expo-file-system'; // reads the local photo file
+import { decode } from 'base64-arraybuffer'; // base64 text -> raw bytes
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 import AuthScreen from '@/components/auth/AuthScreen';
 import { useRegisterStore } from '@/store/registerStore';
@@ -21,24 +23,55 @@ export default function AvatarStep() {
     if (!result.canceled) setDraft({ avatarUri: result.assets[0].uri });
   }
 
-  // the only place we talk to Supabase: create the account with everything collected
+  // creates the account, then uploads the photo (if any) to Supabase storage
   async function handleFinish() {
     setLoading(true);
 
-    const { error } = await supabase.auth.signUp({
+    // 1. create the account
+    const { data, error } = await supabase.auth.signUp({
       email,
       password,
       options: { data: { username } },
     });
 
-    // TODO (backend, later): upload avatarUri to storage and save its url on the profile
-
-    setLoading(false);
-
-    if (error) {
-      Alert.alert('Registration failed', error.message);
+    if (error || !data.user) {
+      setLoading(false);
+      Alert.alert('Registration failed', error?.message ?? 'Something went wrong');
       return;
     }
+
+    // 2. upload the photo only if one was picked AND we have a session
+    if (avatarUri && data.session) {
+      try {
+        // read the file as base64, then convert to bytes
+        // (fetch().arrayBuffer() gave a corrupt file on React Native)
+        const base64 = await new File(avatarUri).base64();
+        const bytes = decode(base64);
+
+        // folder name = user id, this is what the storage policy checks
+        const path = `${data.user.id}/avatar.jpg`;
+
+        const { error: uploadError } = await supabase.storage
+          .from('avatars')
+          .upload(path, bytes, { contentType: 'image/jpeg', upsert: true });
+        if (uploadError) throw uploadError;
+
+        // save the public url on the profile row
+        const { data: pub } = supabase.storage.from('avatars').getPublicUrl(path);
+        const { error: profileError } = await supabase
+          .from('profiles')
+          .update({ avatar_url: pub.publicUrl })
+          .eq('id', data.user.id);
+        if (profileError) throw profileError;
+      } catch (e) {
+        // account already exists, so don't block signup over a photo
+        console.log('avatar upload error:', e);
+      }
+    } else if (avatarUri && !data.session) {
+      console.log('No session after signUp: email confirmation is on, photo not uploaded');
+    }
+
+    setLoading(false);
     reset(); // the root layout's auth listener redirects to the chats tab
   }
 

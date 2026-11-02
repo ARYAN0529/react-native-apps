@@ -1,13 +1,22 @@
 import { useEffect } from 'react';
-import { View, Text, TouchableOpacity, Alert, ScrollView, StyleSheet } from 'react-native';
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  Alert,
+  ScrollView,
+  StyleSheet,
+  Image,
+} from 'react-native';
 import { router } from 'expo-router';
 import { supabase } from '@/utils/supabase';
 import { useStore } from '@/store/store';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-//setting page
-// edit profile is not created 
+
+// settings tab
+// edit profile screen is not created yet
 
 type RowProps = {
   icon: keyof typeof Ionicons.glyphMap;
@@ -19,20 +28,18 @@ type RowProps = {
   danger?: boolean;
 };
 
-// One reusable row. It returns a single root view (no Fragment),
-// and the divider lives inside it, so every row is one self-contained block.
+// One reusable row. Single root view, divider lives inside it.
 function Row({ icon, label, tint, tileBg, onPress, isLast, danger }: RowProps) {
   return (
     <TouchableOpacity onPress={onPress} activeOpacity={0.6} style={styles.rowWrap}>
       <View style={styles.row}>
-        {/* Fixed background colors instead of "hex + 1A" opacity tricks, which are less reliable */}
         <View style={[styles.iconTile, { backgroundColor: tileBg }]}>
           <Ionicons name={icon} size={20} color={tint} />
         </View>
         <Text style={[styles.rowLabel, danger && { color: '#E5484D' }]}>{label}</Text>
         {!danger && <Ionicons name="chevron-forward" size={18} color="#C4C4C0" />}
       </View>
-      {/* Inset divider: starts under the label, hidden on the last row */}
+      {/* inset divider: starts under the label, hidden on the last row */}
       {!isLast && <View style={styles.divider} />}
     </TouchableOpacity>
   );
@@ -42,7 +49,7 @@ export default function SettingsScreen() {
   const { user, setUser } = useStore();
   const insets = useSafeAreaInsets();
 
-  // Same logic as your original: load the user if the store is empty
+  // load the user if the store is empty
   useEffect(() => {
     if (!user) fetchUser();
   }, []);
@@ -53,12 +60,17 @@ export default function SettingsScreen() {
 
     const { data: profile } = await supabase
       .from('profiles')
-      .select('username, email')
+      .select('username, email, avatar_url') // avatar_url added
       .eq('id', authUser.id)
       .single();
 
     if (profile) {
-      setUser({ id: authUser.id, username: profile.username, email: profile.email });
+      setUser({
+        id: authUser.id,
+        username: profile.username,
+        email: profile.email,
+        avatarUrl: profile.avatar_url, // needs avatarUrl?: string | null in store.ts
+      });
     }
   }
 
@@ -86,7 +98,7 @@ export default function SettingsScreen() {
           <Ionicons name="chevron-back" size={22} color="#222" />
         </TouchableOpacity>
         <Text style={styles.title}>Settings</Text>
-        {/* Spacer, same width as back button, keeps the title centered */}
+        {/* spacer, same width as back button, keeps the title centered */}
         <View style={styles.backBtn} />
       </View>
 
@@ -100,8 +112,16 @@ export default function SettingsScreen() {
           activeOpacity={0.7}
           onPress={() => router.push('/edit-profile')}
         >
+          {/* photo if the user has one, otherwise the first letter */}
           <View style={styles.avatar}>
-            <Text style={styles.avatarText}>{initial}</Text>
+            {user?.avatarUrl ? (
+              <Image source={{ uri: user.avatarUrl }} 
+              style={styles.avatarImg} 
+              onError={(e) => console.log('img error:', e.nativeEvent.error, user.avatarUrl)}
+              />
+            ) : (
+              <Text style={styles.avatarText}>{initial}</Text>
+            )}
           </View>
           <View style={{ flex: 1 }}>
             <Text style={styles.profileName}>{user?.username ?? 'Loading…'}</Text>
@@ -138,7 +158,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingVertical: 10,
   },
-  // Plain white circle with a hairline border (no elevation, so no Android shadow quirks)
+  // white circle with a hairline border (no elevation, no Android shadow quirks)
   backBtn: {
     width: 40,
     height: 40,
@@ -161,7 +181,7 @@ const styles = StyleSheet.create({
     letterSpacing: 0.3,
   },
 
-  // Card: border instead of shadow. overflow hidden is now safe because there's no elevation on this view.
+  // card: border instead of shadow, so overflow hidden is safe
   card: {
     marginHorizontal: 20,
     backgroundColor: '#fff',
@@ -185,7 +205,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: 14,
+    overflow: 'hidden', // clips the photo to the circle
   },
+  avatarImg: { width: 52, height: 52 },
   avatarText: { fontSize: 22, fontWeight: '600', color: '#F59E0B' },
   profileName: { fontSize: 17, fontWeight: '600', color: '#222' },
   profileEmail: { fontSize: 13, color: '#9A9A95', marginTop: 2 },
