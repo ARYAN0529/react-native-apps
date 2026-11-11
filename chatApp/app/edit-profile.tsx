@@ -86,8 +86,8 @@ export default function EditProfile() {
         </TouchableOpacity>
         <Text style={styles.title}>Edit Profile</Text>
         {/* spacer keeps the title centered */}
-        <View style={styles.backBtn} />
-      </View>
+        <View style={{ width: 40 }} />     
+ </View>
 
       <View style={styles.center}>
         <TouchableOpacity onPress={pickImage} activeOpacity={0.8}>

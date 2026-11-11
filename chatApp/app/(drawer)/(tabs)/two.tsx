@@ -14,9 +14,7 @@ import { useStore } from '@/store/store';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-
 // settings tab
-// edit profile screen is not created yet
 
 type RowProps = {
   icon: keyof typeof Ionicons.glyphMap;
@@ -60,7 +58,7 @@ export default function SettingsScreen() {
 
     const { data: profile } = await supabase
       .from('profiles')
-      .select('username, email, avatar_url') // avatar_url added
+      .select('username, email, avatar_url')
       .eq('id', authUser.id)
       .single();
 
@@ -98,8 +96,8 @@ export default function SettingsScreen() {
           <Ionicons name="chevron-back" size={22} color="#222" />
         </TouchableOpacity>
         <Text style={styles.title}>Settings</Text>
-        {/* spacer, same width as back button, keeps the title centered */}
-        <View style={styles.backBtn} />
+        {/* invisible spacer, same width as the back button, keeps the title centered */}
+        <View style={{ width: 40 }} />
       </View>
 
       <ScrollView
@@ -115,9 +113,10 @@ export default function SettingsScreen() {
           {/* photo if the user has one, otherwise the first letter */}
           <View style={styles.avatar}>
             {user?.avatarUrl ? (
-              <Image source={{ uri: user.avatarUrl }} 
-              style={styles.avatarImg} 
-              onError={(e) => console.log('img error:', e.nativeEvent.error, user.avatarUrl)}
+              <Image
+                source={{ uri: user.avatarUrl }}
+                style={styles.avatarImg}
+                onError={(e) => console.log('img error:', e.nativeEvent.error, user.avatarUrl)}
               />
             ) : (
               <Text style={styles.avatarText}>{initial}</Text>
@@ -142,7 +141,7 @@ export default function SettingsScreen() {
           <Row icon="trash-outline" label="Delete Account" tint="#E5484D" tileBg="#FDECEC" danger isLast />
         </View>
 
-        <Text style={styles.version}>Version 1.0.0</Text>
+        <Text style={styles.version}>Version 1.0.1</Text>
       </ScrollView>
     </View>
   );
@@ -197,19 +196,20 @@ const styles = StyleSheet.create({
     padding: 16,
     marginTop: 12,
   },
+  // bigger photo: 76 wide, borderRadius = half of that for a perfect circle
   avatar: {
-    width: 52,
-    height: 52,
-    borderRadius: 26,
+    width: 76,
+    height: 76,
+    borderRadius: 38,
     backgroundColor: '#FFF1DB',
     alignItems: 'center',
     justifyContent: 'center',
-    marginRight: 14,
+    marginRight: 16,
     overflow: 'hidden', // clips the photo to the circle
   },
-  avatarImg: { width: 52, height: 52 },
-  avatarText: { fontSize: 22, fontWeight: '600', color: '#F59E0B' },
-  profileName: { fontSize: 17, fontWeight: '600', color: '#222' },
+  avatarImg: { width: 76, height: 76 },
+  avatarText: { fontSize: 30, fontWeight: '600', color: '#F59E0B' },
+  profileName: { fontSize: 18, fontWeight: '600', color: '#222' },
   profileEmail: { fontSize: 13, color: '#9A9A95', marginTop: 2 },
 
   rowWrap: { backgroundColor: '#fff' },

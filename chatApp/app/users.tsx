@@ -1,5 +1,13 @@
 import { useEffect, useState } from 'react';
-import { View, Text, FlatList, TouchableOpacity, TextInput, ActivityIndicator } from 'react-native';
+import {
+  View,
+  Text,
+  FlatList,
+  TouchableOpacity,
+  TextInput,
+  ActivityIndicator,
+  Image,
+} from 'react-native';
 import { Stack, router } from 'expo-router';
 import { supabase } from '@/utils/supabase';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
@@ -8,6 +16,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 type Profile = {
   id: string;
   username: string;
+  avatar_url: string | null; // null if the user never set a photo
 };
 
 // Pastel avatar pairs, same as the other screens
@@ -42,6 +51,7 @@ export default function UsersScreen() {
     fetchUsers();
   }, []);
 
+  // re-filter whenever the search text or the user list changes
   useEffect(() => {
     const query = search.trim().toLowerCase();
     if (!query) {
@@ -58,7 +68,7 @@ export default function UsersScreen() {
 
       const { data, error } = await supabase
         .from('profiles')
-        .select('id, username')
+        .select('id, username, avatar_url') // avatar_url added so photos can show
         .neq('id', user.id)
         .order('username', { ascending: true });
 
@@ -162,7 +172,7 @@ export default function UsersScreen() {
                 onPress={() => startConversation(item)}
                 style={{ flexDirection: 'row', alignItems: 'center', paddingLeft: 16, minHeight: 76 }}
               >
-                {/* Avatar */}
+                {/* Avatar: photo if the user has one, otherwise the colored letter */}
                 <View
                   style={{
                     width: 52,
@@ -172,11 +182,16 @@ export default function UsersScreen() {
                     alignItems: 'center',
                     justifyContent: 'center',
                     marginRight: 13,
+                    overflow: 'hidden', // clips the photo to the circle
                   }}
                 >
-                  <Text style={{ color: color.fg, fontSize: 21, fontWeight: '600' }}>
-                    {item.username?.[0]?.toUpperCase() ?? '?'}
-                  </Text>
+                  {item.avatar_url ? (
+                    <Image source={{ uri: item.avatar_url }} style={{ width: 52, height: 52 }} />
+                  ) : (
+                    <Text style={{ color: color.fg, fontSize: 21, fontWeight: '600' }}>
+                      {item.username?.[0]?.toUpperCase() ?? '?'}
+                    </Text>
+                  )}
                 </View>
 
                 {/* Username + thin line under it, like your original */}
