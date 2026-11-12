@@ -86,6 +86,41 @@ export default function SettingsScreen() {
     ]);
   }
 
+
+function handleDeleteAccount() {
+  Alert.alert(
+    'Delete Account',
+    'This permanently deletes your account and profile. This cannot be undone.',
+    [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Delete',
+        style: 'destructive',
+        onPress: async () => {
+          if (!user) return;
+
+          // remove the photo first, while we're still logged in
+          await supabase.storage.from('avatars').remove([`${user.id}/avatar.jpg`]);
+
+          // delete the account via the SQL function
+          const { error } = await supabase.rpc('delete_my_account');
+          if (error) {
+            Alert.alert('Could not delete account', error.message);
+            return;
+          }
+
+          // clear the local session, your auth listener sends you to login
+          await supabase.auth.signOut();
+          setUser(null);
+        },
+      },
+    ]
+  );
+}
+
+
+
+
   const initial = user?.username?.[0]?.toUpperCase() ?? '?';
 
   return (
@@ -138,7 +173,7 @@ export default function SettingsScreen() {
         <Text style={styles.sectionLabel}>Account</Text>
         <View style={styles.card}>
           <Row icon="log-out-outline" label="Log Out" tint="#6B7280" tileBg="#F1F1EE" onPress={handleLogout} />
-          <Row icon="trash-outline" label="Delete Account" tint="#E5484D" tileBg="#FDECEC" danger isLast />
+          <Row icon="trash-outline" label="Delete Account" tint="#E5484D" tileBg="#FDECEC" danger isLast onPress={handleDeleteAccount} />
         </View>
 
         <Text style={styles.version}>Version 1.0.1</Text>
