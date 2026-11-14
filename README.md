@@ -1,6 +1,6 @@
 # ChatApp 💬
 
-A real-time mobile messaging application built with **React Native, Expo, and Supabase**. ChatApp offers secure authentication, one-to-one conversations, and instant messaging through a clean, Telegram-inspired interface.
+A real-time mobile messaging application built with **React Native, Expo, and Supabase**. ChatApp provides secure authentication, one-to-one conversations, and instant messaging through a clean, Telegram-inspired interface.
 
 <p align="left">
   <a href="https://github.com/ARYAN0529/react-native-apps/releases/latest">
@@ -16,10 +16,10 @@ A real-time mobile messaging application built with **React Native, Expo, and Su
 ## 📸 Screenshots
 
 <p align="center">
-  <img src="screenshots/login.jpeg" width="190" alt="Login Screen"/>
-  <img src="screenshots/chats.jpeg" width="190" alt="Chats Screen"/>
-  <img src="screenshots/search.jpeg" width="190" alt="Search Screen"/>
-  <img src="screenshots/setting.jpeg" width="190" alt="Settings Screen"/>
+  <img src="chatApp/screenshots/login.jpeg" width="190" alt="Login Screen"/>
+  <img src="chatApp/screenshots/chats.jpeg" width="190" alt="Chats Screen"/>
+  <img src="chatApp/screenshots/search.jpeg" width="190" alt="Search Screen"/>
+  <img src="chatApp/screenshots/setting.jpeg" width="190" alt="Settings Screen"/>
 </p>
 
 ---
@@ -58,37 +58,41 @@ A real-time mobile messaging application built with **React Native, Expo, and Su
 ## 📂 Project Structure
 
 ```text
-chatApp/
-├── app/
-│   ├── (auth)/
-│   │   ├── _layout.tsx
-│   │   ├── login.tsx
-│   │   └── register.tsx
-│   ├── (drawer)/
-│   │   ├── (tabs)/
-│   │   │   ├── _layout.tsx
-│   │   │   ├── index.tsx
-│   │   │   └── two.tsx
-│   │   └── _layout.tsx
-│   ├── chat/
-│   │   └── [id].tsx
-│   ├── users.tsx
-│   └── _layout.tsx
-├── components/
-├── database/
-│   └── schema.sql
-├── screenshots/
-│   ├── login.jpeg
-│   ├── chats.jpeg
-│   ├── search.jpeg
-│   └── setting.jpeg
-├── store/
-│   └── store.ts
-├── utils/
-│   └── supabase.ts
-├── global.css
-├── package.json
-└── README.md
+react-native-apps/
+│
+├── README.md
+│
+└── chatApp/
+    ├── app/
+    │   ├── (auth)/
+    │   │   ├── _layout.tsx
+    │   │   ├── login.tsx
+    │   │   └── register.tsx
+    │   ├── (drawer)/
+    │   │   ├── (tabs)/
+    │   │   │   ├── _layout.tsx
+    │   │   │   ├── index.tsx
+    │   │   │   └── two.tsx
+    │   │   └── _layout.tsx
+    │   ├── chat/
+    │   │   └── [id].tsx
+    │   ├── users.tsx
+    │   └── _layout.tsx
+    │
+    ├── components/
+    ├── database/
+    │   └── schema.sql
+    ├── screenshots/
+    │   ├── login.jpeg
+    │   ├── chats.jpeg
+    │   ├── search.jpeg
+    │   └── setting.jpeg
+    ├── store/
+    │   └── store.ts
+    ├── utils/
+    │   └── supabase.ts
+    ├── global.css
+    └── package.json
 ```
 
 ---
@@ -209,11 +213,13 @@ eas build -p android --profile preview
 
 Configure the required environment variables in EAS before building.
 
-### Download
+### Download Latest Release
 
-<a href="https://github.com/ARYAN0529/react-native-apps/releases/latest">
-  <img src="https://img.shields.io/badge/Download-Latest_Android_APK-2ea44f?style=for-the-badge&logo=android&logoColor=white" alt="Download Latest APK"/>
-</a>
+<p>
+  <a href="https://github.com/ARYAN0529/react-native-apps/releases/latest">
+    <img src="https://img.shields.io/badge/Download-Latest_Android_APK-2ea44f?style=for-the-badge&logo=android&logoColor=white" alt="Download Latest APK"/>
+  </a>
+</p>
 
 ---
 
