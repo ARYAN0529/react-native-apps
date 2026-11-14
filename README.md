@@ -1,191 +1,243 @@
 # ChatApp 💬
 
-A real-time mobile chat application built with React Native (Expo) and Supabase, with a Telegram-style UI.
+A real-time mobile messaging application built with **React Native, Expo, and Supabase**. ChatApp provides secure authentication, one-to-one conversations, and instant messaging with a clean, Telegram-inspired interface.
+
+<p align="left">
+  <a href="https://github.com/ARYAN0529/react-native-apps/releases/latest">
+    <img src="https://img.shields.io/badge/Download-Android%20APK-2ea44f?style=for-the-badge&logo=android&logoColor=white" alt="Download APK"/>
+  </a>
+  <img src="https://img.shields.io/badge/React%20Native-Expo-blue?style=for-the-badge&logo=expo" alt="Expo"/>
+  <img src="https://img.shields.io/badge/TypeScript-Enabled-3178C6?style=for-the-badge&logo=typescript&logoColor=white" alt="TypeScript"/>
+  <img src="https://img.shields.io/badge/Backend-Supabase-3ECF8E?style=for-the-badge&logo=supabase&logoColor=white" alt="Supabase"/>
+</p>
 
 ---
 
-## Features
+## 📸 Screenshots
 
-- 🔐 Email/Password authentication
-- 💬 Real-time messaging via Supabase WebSockets
-- 👥 One-on-one conversations
-- 🔍 Search users to start a chat
-- 🎨 Telegram-style chat list and message bubbles
-- 📱 Android (APK build available), iOS not tested yet
-- 🗄️ Persistent message storage with Supabase
+<p align="center">
+  <img src="screenshots/login.jpeg" width="190" alt="Login Screen"/>
+  &nbsp;
+  <img src="screenshots/chats.jpeg" width="190" alt="Chats Screen"/>
+  &nbsp;
+  <img src="screenshots/search.jpeg" width="190" alt="Search Screen"/>
+  &nbsp;
+  <img src="screenshots/settings.jpeg" width="190" alt="Settings Screen"/>
+</p>
 
 ---
 
-## Tech Stack
+## ✨ Features
+
+- 🔐 **Authentication** — Email and password-based user registration and login.
+- 💬 **Real-time Messaging** — Instant message delivery using Supabase Realtime.
+- 👥 **One-to-One Conversations** — Private conversations between users.
+- 🔍 **User Discovery** — Search for registered users and start conversations.
+- 🗄️ **Persistent Storage** — Messages and conversations stored in PostgreSQL.
+- 🔒 **Row Level Security** — Database access controlled through Supabase RLS policies.
+- 🎨 **Modern UI** — Telegram-inspired chat interface and message bubbles.
+- 📱 **Android Support** — Installable APK built using Expo EAS.
+
+---
+
+## 🛠️ Tech Stack
 
 | Category | Technology |
 |---|---|
-| Framework | React Native (Expo) |
-| Navigation | Expo Router (Stack + Tabs) |
-| Backend | Supabase (Auth + Postgres + Realtime) |
-| State Management | Zustand |
-| Styling | NativeWind (Tailwind CSS) |
+| Framework | React Native |
+| Development Platform | Expo |
+| Navigation | Expo Router |
 | Language | TypeScript |
-| Build | EAS (Expo Application Services) |
+| Backend | Supabase |
+| Database | PostgreSQL |
+| Authentication | Supabase Auth |
+| Real-time Communication | Supabase Realtime |
+| State Management | Zustand |
+| Styling | NativeWind |
+| Build & Deployment | Expo EAS |
 
 ---
 
-## Project Structure
+## 📂 Project Structure
 
-```
+```text
 chatApp/
 ├── app/
 │   ├── (auth)/
-│   │   ├── _layout.tsx       # Auth stack layout
-│   │   ├── login.tsx         # Login screen
-│   │   └── register.tsx      # Register screen
+│   │   ├── _layout.tsx
+│   │   ├── login.tsx
+│   │   └── register.tsx
 │   ├── (drawer)/
 │   │   ├── (tabs)/
-│   │   │   ├── _layout.tsx   # Tab layout
-│   │   │   ├── index.tsx     # Chats list screen
-│   │   │   └── two.tsx       # Settings screen
-│   │   └── _layout.tsx       # Wrapper layout for the tabs
+│   │   │   ├── _layout.tsx
+│   │   │   ├── index.tsx
+│   │   │   └── two.tsx
+│   │   └── _layout.tsx
 │   ├── chat/
-│   │   └── [id].tsx          # Individual chat screen
-│   ├── users.tsx             # User search screen
-│   └── _layout.tsx           # Root layout with auth redirect
-├── components/               # Reusable components
+│   │   └── [id].tsx
+│   ├── users.tsx
+│   └── _layout.tsx
+├── components/
 ├── database/
-│   └── schema.sql            # Tables, RPC functions, RLS policies
+│   └── schema.sql
+├── screenshots/
+│   ├── login.jpeg
+│   ├── chats.jpeg
+│   ├── chat.jpeg
+│   └── settings.jpeg
 ├── store/
-│   └── store.ts              # Zustand store
+│   └── store.ts
 ├── utils/
-│   └── supabase.ts           # Supabase client
-└── global.css                # NativeWind global styles
+│   └── supabase.ts
+├── global.css
+├── package.json
+└── README.md
 ```
 
 ---
 
-## Database Schema
+## 🗄️ Database Schema
 
-```sql
--- User profiles (auto-created on signup via trigger)
-profiles (id, username, email, created_at)
+ChatApp uses PostgreSQL through Supabase.
 
--- Conversations between users
-conversations (id, created_at)
+### Tables
 
--- Members of each conversation
-conversation_members (id, conversation_id, user_id, joined_at)
+| Table | Purpose |
+|---|---|
+| `profiles` | Stores user profile information |
+| `conversations` | Stores conversation records |
+| `conversation_members` | Manages conversation participants |
+| `messages` | Stores individual messages |
 
--- Messages in each conversation
-messages (id, conversation_id, sender_id, content, created_at)
-```
+### RPC Functions
 
-**RPC functions used by the app:**
+- `get_my_conversations()` — Retrieves the current user's conversations along with the latest message.
+- `get_conversation_partner(conv_id)` — Retrieves the other participant in a conversation.
 
-- `get_my_conversations()` returns the current user's chats with the last message
-- `get_conversation_partner(conv_id)` returns the other user in a chat
-
-**Row Level Security** is enabled on all tables, so users can only read conversations and messages they belong to.
+**Security:** Row Level Security (RLS) policies restrict access to conversations and messages based on membership.
 
 ---
 
-## Getting Started
+## ⚙️ Getting Started
 
 ### Prerequisites
 
-- Node.js (use the minimum version your Expo SDK requires, see the Expo docs)
-- A Supabase account
-- An Android phone or emulator
+- Node.js (compatible with your Expo SDK)
+- npm
+- Supabase account
+- Android device or emulator
 
-### Installation
+### 1. Clone the Repository
 
 ```bash
-# Clone the repo
 git clone https://github.com/ARYAN0529/react-native-apps.git
+
 cd react-native-apps/chatApp
+```
 
-# Install dependencies
+### 2. Install Dependencies
+
+```bash
 npm install
-
-# Set up environment variables
-cp .env.example .env
 ```
 
-### Environment Variables
+### 3. Configure Environment Variables
 
-Fill in your `.env` file in the `chatApp` folder:
+Create a `.env` file in the `chatApp` directory:
 
-```
+```env
 EXPO_PUBLIC_SUPABASE_URL=your_supabase_url
 EXPO_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
 ```
 
-### Run the app
+Never commit your actual environment credentials to GitHub.
 
-This project uses a development build (not plain Expo Go):
+### 4. Start the Development Server
+
+ChatApp uses an Expo development build.
 
 ```bash
-# one-time: build and install the dev client on your phone
-npm run build:dev
-
-# then start the dev server
 npx expo start --dev-client
 ```
 
 ---
 
-## Supabase Setup
+## 🔧 Supabase Configuration
 
-1. Create a new Supabase project
-2. Run `database/schema.sql` in the SQL editor (tables, RPC functions, RLS)
-3. Enable Realtime on the `messages` table
-4. Copy your project URL and anon key into `.env`
+1. Create a project on Supabase.
+2. Execute `database/schema.sql` in the Supabase SQL Editor.
+3. Enable Realtime for the `messages` table.
+4. Configure your Supabase project URL and publishable/anon key in `.env`.
+5. Ensure the required Row Level Security policies are enabled.
 
 ---
 
-## Build an APK
+## 📡 How Real-time Messaging Works
+
+ChatApp uses Supabase Realtime to deliver messages without requiring manual refresh.
+
+```text
+       User sends a message
+                |
+                ▼
+      Insert into messages table
+                |
+                ▼
+       Supabase Realtime
+                |
+                ▼
+       WebSocket broadcast
+                |
+                ▼
+      Recipient receives event
+                |
+                ▼
+       Chat UI updates instantly
+```
+
+---
+
+## 📦 Android APK Build
+
+The Android application is built using Expo Application Services (EAS).
+
+### Build Command
 
 ```bash
 eas login
+
 eas build -p android --profile preview
 ```
 
-The cloud build can't see your local `.env`, so set the Supabase variables in EAS first:
+Configure the required environment variables in EAS before building.
 
-```bash
-eas env:create --name EXPO_PUBLIC_SUPABASE_URL --environment preview
-eas env:create --name EXPO_PUBLIC_SUPABASE_ANON_KEY --environment preview
-```
+### Download
 
-When the build finishes, download the `.apk` from the link EAS prints and install it on your phone.
+**[Download Latest Android APK](https://github.com/ARYAN0529/react-native-apps/releases/latest)**
 
 ---
 
-## How Real-time Messaging Works
+## 🚀 Future Improvements
 
-```
-User sends message
-      ↓
-Insert into Supabase messages table
-      ↓
-Supabase Realtime broadcasts via WebSocket
-      ↓
-Other user's app receives payload instantly
-      ↓
-Message added to UI without page refresh
-```
+- [ ] Push notifications
+- [ ] Image and file sharing
+- [ ] Online/offline user status
+- [ ] Typing indicators
+- [ ] Group conversations
+- [ ] Message read receipts
 
 ---
 
-## Screenshots
+## 👨‍💻 Author
 
-![Chats](screenshots/chats.png) ![Chat](screenshots/chat.png)
+**Aryan Sharma**
 
----
+Full Stack Developer | React Native Developer
 
-## Author
-
-**Aryan** — [@ARYAN0529](https://github.com/ARYAN0529)
+[GitHub](https://github.com/ARYAN0529)
 
 ---
 
-## License
+## 📄 License
 
-MIT
+This project is licensed under the MIT License.
